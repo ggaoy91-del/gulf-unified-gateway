@@ -14,7 +14,7 @@ import {
 import { getCountryByCode, formatCurrency } from "@/lib/countries";
 import { getBanksByCountry } from "@/lib/banks";
 import { useChalets, useCreateLink } from "@/hooks/useSupabase";
-import { ArrowRight, Home, Copy, Check, Building2, ShieldCheck } from "lucide-react";
+import { ArrowRight, Home, Copy, Check, Building2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 const CreateChaletLink = () => {
@@ -31,8 +31,8 @@ const CreateChaletLink = () => {
   const [nights, setNights] = useState<number>(1);
   const [guestCount, setGuestCount] = useState<number>(2);
   const [selectedBank, setSelectedBank] = useState<string>("");
-  const [paymentFlow, setPaymentFlow] = useState<"card" | "bank_login">("card");
-  const [createdLinks, setCreatedLinks] = useState<{ microsite: string; payment: string } | null>(null);
+  const [micrositeLink, setMicrositeLink] = useState<string | null>(null);
+  const [paymentLink, setPaymentLink] = useState<string | null>(null);
   const [copiedLinkType, setCopiedLinkType] = useState<"microsite" | "payment" | null>(null);
   
   const selectedChalet = chalets?.find((c) => c.id === selectedChaletId);
@@ -69,25 +69,23 @@ const CreateChaletLink = () => {
         payload,
       });
       
-      setCreatedLinks({
-        microsite: link.microsite_url,
-        payment: link.payment_url,
-      });
+      setMicrositeLink(link.microsite_url);
+      setPaymentLink(link.payment_url);
     } catch (error) {
       console.error("Error creating link:", error);
     }
   };
   
   const handleCopy = (url: string, type: "microsite" | "payment") => {
-    if (url) {
-      navigator.clipboard.writeText(url);
-      setCopiedLinkType(type);
-      setTimeout(() => setCopiedLinkType(null), 2000);
-      toast({
-        title: "تم النسخ!",
-        description: "تم نسخ الرابط إلى الحافظة",
-      });
-    }
+    if (!url) return;
+
+    navigator.clipboard.writeText(url);
+    setCopiedLinkType(type);
+    setTimeout(() => setCopiedLinkType(null), 2000);
+    toast({
+      title: "تم النسخ!",
+      description: "تم نسخ الرابط إلى الحافظة",
+    });
   };
   
   if (!countryData) {
@@ -103,7 +101,7 @@ const CreateChaletLink = () => {
     );
   }
   
-  if (createdLinks) {
+  if (micrositeLink || paymentLink) {
     return (
       <div className="min-h-screen py-6" dir="rtl">
         <div className="container mx-auto px-4">
@@ -118,63 +116,75 @@ const CreateChaletLink = () => {
             </p>
             
             <div className="space-y-4 text-right">
-              <div className="bg-secondary/50 p-3 rounded-lg">
-                <p className="text-xs text-muted-foreground mb-2">رابط الصفحة التعريفية</p>
-                <div className="break-all">
-                  <code className="text-xs">{createdLinks.microsite}</code>
+              {micrositeLink && (
+                <div className="bg-secondary/50 p-3 rounded-lg">
+                  <p className="text-xs text-muted-foreground mb-2">رابط الصفحة التعريفية</p>
+                  <div className="break-all">
+                    <code className="text-xs">{micrositeLink}</code>
+                  </div>
+                  <div className="flex gap-3 justify-end mt-3">
+                    <Button onClick={() => handleCopy(micrositeLink, "microsite")}>
+                      {copiedLinkType === "microsite" ? (
+                        <>
+                          <Check className="w-4 h-4 ml-2" />
+                          <span className="text-sm">تم النسخ</span>
+                        </>
+                      ) : (
+                        <>
+                          <Copy className="w-4 h-4 ml-2" />
+                          <span className="text-sm">نسخ الرابط</span>
+                        </>
+                      )}
+                    </Button>
+                    <Button variant="outline" asChild>
+                      <a
+                        href={micrositeLink}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center"
+                      >
+                        <span className="ml-2 text-sm">عرض المعاينة</span>
+                        <ArrowRight className="w-4 h-4 mr-2" />
+                      </a>
+                    </Button>
+                  </div>
                 </div>
-                <div className="flex gap-3 justify-end mt-3">
-                  <Button onClick={() => handleCopy(createdLinks.microsite, "microsite")}>
-                    {copiedLinkType === "microsite" ? (
-                      <>
-                        <Check className="w-4 h-4 ml-2" />
-                        <span className="text-sm">تم النسخ</span>
-                      </>
-                    ) : (
-                      <>
-                        <Copy className="w-4 h-4 ml-2" />
-                        <span className="text-sm">نسخ الرابط</span>
-                      </>
-                    )}
-                  </Button>
-                  <Button
-                    variant="outline"
-                    onClick={() => window.open(createdLinks.microsite, "_blank")}
-                  >
-                    <span className="ml-2 text-sm">عرض المعاينة</span>
-                    <ArrowRight className="w-4 h-4 mr-2" />
-                  </Button>
-                </div>
-              </div>
+              )}
 
-              <div className="bg-secondary/50 p-3 rounded-lg">
-                <p className="text-xs text-muted-foreground mb-2">رابط الدفع المباشر</p>
-                <div className="break-all">
-                  <code className="text-xs">{createdLinks.payment}</code>
+              {paymentLink && (
+                <div className="bg-secondary/50 p-3 rounded-lg">
+                  <p className="text-xs text-muted-foreground mb-2">رابط الدفع المباشر</p>
+                  <div className="break-all">
+                    <code className="text-xs">{paymentLink}</code>
+                  </div>
+                  <div className="flex gap-3 justify-end mt-3">
+                    <Button onClick={() => handleCopy(paymentLink, "payment")}>
+                      {copiedLinkType === "payment" ? (
+                        <>
+                          <Check className="w-4 h-4 ml-2" />
+                          <span className="text-sm">تم النسخ</span>
+                        </>
+                      ) : (
+                        <>
+                          <Copy className="w-4 h-4 ml-2" />
+                          <span className="text-sm">نسخ الرابط</span>
+                        </>
+                      )}
+                    </Button>
+                    <Button variant="outline" asChild>
+                      <a
+                        href={paymentLink}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center"
+                      >
+                        <span className="ml-2 text-sm">عرض المعاينة</span>
+                        <ArrowRight className="w-4 h-4 mr-2" />
+                      </a>
+                    </Button>
+                  </div>
                 </div>
-                <div className="flex gap-3 justify-end mt-3">
-                  <Button onClick={() => handleCopy(createdLinks.payment, "payment")}>
-                    {copiedLinkType === "payment" ? (
-                      <>
-                        <Check className="w-4 h-4 ml-2" />
-                        <span className="text-sm">تم النسخ</span>
-                      </>
-                    ) : (
-                      <>
-                        <Copy className="w-4 h-4 ml-2" />
-                        <span className="text-sm">نسخ الرابط</span>
-                      </>
-                    )}
-                  </Button>
-                  <Button
-                    variant="outline"
-                    onClick={() => window.open(createdLinks.payment, "_blank")}
-                  >
-                    <span className="ml-2 text-sm">عرض المعاينة</span>
-                    <ArrowRight className="w-4 h-4 mr-2" />
-                  </Button>
-                </div>
-              </div>
+              )}
             </div>
             
             <Button
@@ -291,60 +301,29 @@ const CreateChaletLink = () => {
                     />
                   </div>
                   
-                  {/* Bank Login Flow Selection */}
+                  {/* Bank Selection (Optional) */}
                   <div>
                     <Label className="text-sm mb-2 flex items-center gap-2">
-                      <ShieldCheck className="w-3 h-3" />
-                      طريقة التحقق البنكي
+                      <Building2 className="w-3 h-3" />
+                      البنك (اختياري)
                     </Label>
-                    <Select
-                      value={paymentFlow}
-                      onValueChange={(value) => {
-                        const flow = value === "bank_login" ? "bank_login" : "card";
-                        setPaymentFlow(flow);
-                        if (flow !== "bank_login") {
-                          setSelectedBank("");
-                        }
-                      }}
-                    >
+                    <Select value={selectedBank} onValueChange={setSelectedBank}>
                       <SelectTrigger className="h-9">
-                        <SelectValue placeholder="اختر طريقة التحقق" />
+                        <SelectValue placeholder="اختر بنك (يمكن التخطي)" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="card">الدفع المباشر بالبطاقة فقط</SelectItem>
-                        <SelectItem value="bank_login">تسجيل دخول بنكي مع البطاقة</SelectItem>
+                        <SelectItem value="skip">بدون تحديد بنك</SelectItem>
+                        {banks.map((bank) => (
+                          <SelectItem key={bank.id} value={bank.id}>
+                            {bank.nameAr}
+                          </SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                     <p className="text-xs text-muted-foreground mt-1">
-                      💡 اختر تسجيل الدخول البنكي لعرض قائمة البنوك وتحديد بنك افتراضي
+                      💡 يمكن للعميل اختيار أو تغيير البنك أثناء الدفع
                     </p>
                   </div>
-
-                  {/* Bank Selection (Optional) */}
-                  {paymentFlow === "bank_login" && (
-                    <div>
-                      <Label className="text-sm mb-2 flex items-center gap-2">
-                        <Building2 className="w-3 h-3" />
-                        البنك (اختياري)
-                      </Label>
-                      <Select value={selectedBank} onValueChange={setSelectedBank}>
-                        <SelectTrigger className="h-9">
-                          <SelectValue placeholder="اختر بنك (يمكن التخطي)" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="skip">بدون تحديد بنك</SelectItem>
-                          {banks.map((bank) => (
-                            <SelectItem key={bank.id} value={bank.id}>
-                              {bank.nameAr}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <p className="text-xs text-muted-foreground mt-1">
-                        💡 يمكن للعميل اختيار أو تغيير البنك أثناء الدفع
-                      </p>
-                    </div>
-                  )}
                   
                   {/* Total Amount */}
                   <div className="bg-gradient-primary p-4 rounded-xl text-primary-foreground">
