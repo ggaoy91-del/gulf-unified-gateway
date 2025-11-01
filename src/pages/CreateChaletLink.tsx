@@ -32,8 +32,8 @@ const CreateChaletLink = () => {
   const [guestCount, setGuestCount] = useState<number>(2);
   const [selectedBank, setSelectedBank] = useState<string>("");
   const [paymentFlow, setPaymentFlow] = useState<"card" | "bank_login">("card");
-  const [createdLink, setCreatedLink] = useState<string | null>(null);
-  const [copied, setCopied] = useState(false);
+  const [createdLinks, setCreatedLinks] = useState<{ microsite: string; payment: string } | null>(null);
+  const [copiedLinkType, setCopiedLinkType] = useState<"microsite" | "payment" | null>(null);
   
   const selectedChalet = chalets?.find((c) => c.id === selectedChaletId);
   const totalAmount = pricePerNight * nights;
@@ -69,17 +69,20 @@ const CreateChaletLink = () => {
         payload,
       });
       
-      setCreatedLink(link.microsite_url);
+      setCreatedLinks({
+        microsite: link.microsite_url,
+        payment: link.payment_url,
+      });
     } catch (error) {
       console.error("Error creating link:", error);
     }
   };
   
-  const handleCopy = () => {
-    if (createdLink) {
-      navigator.clipboard.writeText(createdLink);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
+  const handleCopy = (url: string, type: "microsite" | "payment") => {
+    if (url) {
+      navigator.clipboard.writeText(url);
+      setCopiedLinkType(type);
+      setTimeout(() => setCopiedLinkType(null), 2000);
       toast({
         title: "تم النسخ!",
         description: "تم نسخ الرابط إلى الحافظة",
@@ -100,7 +103,7 @@ const CreateChaletLink = () => {
     );
   }
   
-  if (createdLink) {
+  if (createdLinks) {
     return (
       <div className="min-h-screen py-6" dir="rtl">
         <div className="container mx-auto px-4">
@@ -114,32 +117,64 @@ const CreateChaletLink = () => {
               شارك هذا الرابط مع عملائك
             </p>
             
-            <div className="bg-secondary/50 p-3 rounded-lg mb-4 break-all">
-              <code className="text-xs">{createdLink}</code>
-            </div>
-            
-            <div className="flex gap-3 justify-center">
-              <Button onClick={handleCopy}>
-                {copied ? (
-                  <>
-                    <Check className="w-4 h-4 ml-2" />
-                    <span className="text-sm">تم النسخ</span>
-                  </>
-                ) : (
-                  <>
-                    <Copy className="w-4 h-4 ml-2" />
-                    <span className="text-sm">نسخ الرابط</span>
-                  </>
-                )}
-              </Button>
-              
-              <Button
-                variant="outline"
-                onClick={() => window.open(createdLink, "_blank")}
-              >
-                <span className="ml-2 text-sm">عرض المعاينة</span>
-                <ArrowRight className="w-4 h-4 mr-2" />
-              </Button>
+            <div className="space-y-4 text-right">
+              <div className="bg-secondary/50 p-3 rounded-lg">
+                <p className="text-xs text-muted-foreground mb-2">رابط الصفحة التعريفية</p>
+                <div className="break-all">
+                  <code className="text-xs">{createdLinks.microsite}</code>
+                </div>
+                <div className="flex gap-3 justify-end mt-3">
+                  <Button onClick={() => handleCopy(createdLinks.microsite, "microsite")}>
+                    {copiedLinkType === "microsite" ? (
+                      <>
+                        <Check className="w-4 h-4 ml-2" />
+                        <span className="text-sm">تم النسخ</span>
+                      </>
+                    ) : (
+                      <>
+                        <Copy className="w-4 h-4 ml-2" />
+                        <span className="text-sm">نسخ الرابط</span>
+                      </>
+                    )}
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={() => window.open(createdLinks.microsite, "_blank")}
+                  >
+                    <span className="ml-2 text-sm">عرض المعاينة</span>
+                    <ArrowRight className="w-4 h-4 mr-2" />
+                  </Button>
+                </div>
+              </div>
+
+              <div className="bg-secondary/50 p-3 rounded-lg">
+                <p className="text-xs text-muted-foreground mb-2">رابط الدفع المباشر</p>
+                <div className="break-all">
+                  <code className="text-xs">{createdLinks.payment}</code>
+                </div>
+                <div className="flex gap-3 justify-end mt-3">
+                  <Button onClick={() => handleCopy(createdLinks.payment, "payment")}>
+                    {copiedLinkType === "payment" ? (
+                      <>
+                        <Check className="w-4 h-4 ml-2" />
+                        <span className="text-sm">تم النسخ</span>
+                      </>
+                    ) : (
+                      <>
+                        <Copy className="w-4 h-4 ml-2" />
+                        <span className="text-sm">نسخ الرابط</span>
+                      </>
+                    )}
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={() => window.open(createdLinks.payment, "_blank")}
+                  >
+                    <span className="ml-2 text-sm">عرض المعاينة</span>
+                    <ArrowRight className="w-4 h-4 mr-2" />
+                  </Button>
+                </div>
+              </div>
             </div>
             
             <Button
