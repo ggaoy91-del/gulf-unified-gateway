@@ -14,7 +14,7 @@ import {
 import { getCountryByCode, formatCurrency } from "@/lib/countries";
 import { getBanksByCountry } from "@/lib/banks";
 import { useChalets, useCreateLink } from "@/hooks/useSupabase";
-import { ArrowRight, Home, Copy, Check, Building2 } from "lucide-react";
+import { ArrowRight, Home, Copy, Check, Building2, CreditCard, LogIn } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 const CreateChaletLink = () => {
@@ -31,6 +31,7 @@ const CreateChaletLink = () => {
   const [nights, setNights] = useState<number>(1);
   const [guestCount, setGuestCount] = useState<number>(2);
   const [selectedBank, setSelectedBank] = useState<string>("");
+  const [paymentMethod, setPaymentMethod] = useState<string>("card");
   const [createdLink, setCreatedLink] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   
@@ -58,6 +59,7 @@ const CreateChaletLink = () => {
       total_amount: totalAmount,
       currency: countryData.currency,
       selected_bank: selectedBank || null,
+      payment_method: paymentMethod,
     };
     
     try {
@@ -255,29 +257,63 @@ const CreateChaletLink = () => {
                     />
                   </div>
                   
-                  {/* Bank Selection (Optional) */}
+                  {/* Payment Method Selection */}
                   <div>
                     <Label className="text-sm mb-2 flex items-center gap-2">
-                      <Building2 className="w-3 h-3" />
-                      البنك (اختياري)
+                      <CreditCard className="w-3 h-3" />
+                      طريقة الدفع *
                     </Label>
-                    <Select value={selectedBank} onValueChange={setSelectedBank}>
+                    <Select value={paymentMethod} onValueChange={setPaymentMethod}>
                       <SelectTrigger className="h-9">
-                        <SelectValue placeholder="اختر بنك (يمكن التخطي)" />
+                        <SelectValue placeholder="اختر طريقة الدفع" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="skip">بدون تحديد بنك</SelectItem>
-                        {banks.map((bank) => (
-                          <SelectItem key={bank.id} value={bank.id}>
-                            {bank.nameAr}
-                          </SelectItem>
-                        ))}
+                        <SelectItem value="card">
+                          <div className="flex items-center gap-2">
+                            <CreditCard className="w-4 h-4" />
+                            الدفع بالبطاقة مباشرة
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="bank_login">
+                          <div className="flex items-center gap-2">
+                            <LogIn className="w-4 h-4" />
+                            الدفع عن طريق تسجيل الدخول
+                          </div>
+                        </SelectItem>
                       </SelectContent>
                     </Select>
                     <p className="text-xs text-muted-foreground mt-1">
-                      💡 يمكن للعميل اختيار أو تغيير البنك أثناء الدفع
+                      {paymentMethod === "card" 
+                        ? "💳 سيدفع العميل مباشرة ببطاقته البنكية" 
+                        : "🏦 سيسجل العميل دخول لحسابه البنكي أولاً"}
                     </p>
                   </div>
+                  
+                  {/* Bank Selection (Optional - Only for bank_login) */}
+                  {paymentMethod === "bank_login" && (
+                    <div>
+                      <Label className="text-sm mb-2 flex items-center gap-2">
+                        <Building2 className="w-3 h-3" />
+                        البنك (اختياري)
+                      </Label>
+                      <Select value={selectedBank} onValueChange={setSelectedBank}>
+                        <SelectTrigger className="h-9">
+                          <SelectValue placeholder="اختر بنك (يمكن التخطي)" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="skip">بدون تحديد بنك</SelectItem>
+                          {banks.map((bank) => (
+                            <SelectItem key={bank.id} value={bank.id}>
+                              {bank.nameAr}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        💡 يمكن للعميل اختيار أو تغيير البنك أثناء الدفع
+                      </p>
+                    </div>
+                  )}
                   
                   {/* Total Amount */}
                   <div className="bg-gradient-primary p-4 rounded-xl text-primary-foreground">
