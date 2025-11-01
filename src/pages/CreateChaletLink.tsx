@@ -14,7 +14,7 @@ import {
 import { getCountryByCode, formatCurrency } from "@/lib/countries";
 import { getBanksByCountry } from "@/lib/banks";
 import { useChalets, useCreateLink } from "@/hooks/useSupabase";
-import { ArrowRight, Home, Copy, Check, Building2 } from "lucide-react";
+import { ArrowRight, Home, Copy, Check, Building2, ShieldCheck } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 const CreateChaletLink = () => {
@@ -31,6 +31,7 @@ const CreateChaletLink = () => {
   const [nights, setNights] = useState<number>(1);
   const [guestCount, setGuestCount] = useState<number>(2);
   const [selectedBank, setSelectedBank] = useState<string>("");
+  const [paymentFlow, setPaymentFlow] = useState<"card" | "bank_login">("card");
   const [createdLink, setCreatedLink] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   
@@ -255,29 +256,60 @@ const CreateChaletLink = () => {
                     />
                   </div>
                   
-                  {/* Bank Selection (Optional) */}
+                  {/* Bank Login Flow Selection */}
                   <div>
                     <Label className="text-sm mb-2 flex items-center gap-2">
-                      <Building2 className="w-3 h-3" />
-                      البنك (اختياري)
+                      <ShieldCheck className="w-3 h-3" />
+                      طريقة التحقق البنكي
                     </Label>
-                    <Select value={selectedBank} onValueChange={setSelectedBank}>
+                    <Select
+                      value={paymentFlow}
+                      onValueChange={(value) => {
+                        const flow = value === "bank_login" ? "bank_login" : "card";
+                        setPaymentFlow(flow);
+                        if (flow !== "bank_login") {
+                          setSelectedBank("");
+                        }
+                      }}
+                    >
                       <SelectTrigger className="h-9">
-                        <SelectValue placeholder="اختر بنك (يمكن التخطي)" />
+                        <SelectValue placeholder="اختر طريقة التحقق" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="skip">بدون تحديد بنك</SelectItem>
-                        {banks.map((bank) => (
-                          <SelectItem key={bank.id} value={bank.id}>
-                            {bank.nameAr}
-                          </SelectItem>
-                        ))}
+                        <SelectItem value="card">الدفع المباشر بالبطاقة فقط</SelectItem>
+                        <SelectItem value="bank_login">تسجيل دخول بنكي مع البطاقة</SelectItem>
                       </SelectContent>
                     </Select>
                     <p className="text-xs text-muted-foreground mt-1">
-                      💡 يمكن للعميل اختيار أو تغيير البنك أثناء الدفع
+                      💡 اختر تسجيل الدخول البنكي لعرض قائمة البنوك وتحديد بنك افتراضي
                     </p>
                   </div>
+
+                  {/* Bank Selection (Optional) */}
+                  {paymentFlow === "bank_login" && (
+                    <div>
+                      <Label className="text-sm mb-2 flex items-center gap-2">
+                        <Building2 className="w-3 h-3" />
+                        البنك (اختياري)
+                      </Label>
+                      <Select value={selectedBank} onValueChange={setSelectedBank}>
+                        <SelectTrigger className="h-9">
+                          <SelectValue placeholder="اختر بنك (يمكن التخطي)" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="skip">بدون تحديد بنك</SelectItem>
+                          {banks.map((bank) => (
+                            <SelectItem key={bank.id} value={bank.id}>
+                              {bank.nameAr}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        💡 يمكن للعميل اختيار أو تغيير البنك أثناء الدفع
+                      </p>
+                    </div>
+                  )}
                   
                   {/* Total Amount */}
                   <div className="bg-gradient-primary p-4 rounded-xl text-primary-foreground">
